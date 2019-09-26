@@ -13,10 +13,10 @@ channel_hop() {
 	IEEE80211bga_intl="$IEEE80211bg_intl $IEEE80211a"
 
 	while true ; do
-		for CHAN in $IEEE80211bg ; do
+		for CHAN in $IEEE80211bga ; do
 			# echo "switching $IFACE to channel $CHAN"
 			sudo iwconfig $IFACE channel $CHAN
-			sleep 2
+			sleep 1
 		done
 	done
 }

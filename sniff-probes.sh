@@ -19,10 +19,10 @@ channel_hop() {
 }
 
 main() {
-  if ! [ -x "$(command -v gawk)" ]; then
-    echo 'gawk (GNU awk) is not installed. Please install gawk.' >&2
-    exit 1
-  fi
+  # if ! [ -x "$(command -v gawk)" ]; then
+  #   echo 'gawk (GNU awk) is not installed. Please install gawk.' >&2
+  #   exit 1
+  # fi
 
   if [[ $IFACE == "" ]]; then
       echo "WiFi interface env variable must be set in [-i wifi_interface]. Type \"ifconfig\" to view network interaces."
@@ -36,9 +36,9 @@ main() {
 
   # filter with awk, output timestamp, MAC, and signal strength.
   if [[ $OUTPUT == "" ]]; then
-    sudo tcpdump -tttt -l -I -i "$IFACE" -e -s 256 type mgt subtype probe-req | awk -f parse-tcpdump.awk
+    sudo tcpdump -tttt -l -I -i "$IFACE" -e -s 256 type mgt subtype probe-req
   else  # only produce output file if user explicitly specifies so.
-    sudo tcpdump -tttt -l -I -i "$IFACE" -e -s 256 type mgt subtype probe-req | awk -f parse-tcpdump.awk | tee -a "$OUTPUT"
+    sudo tcpdump -tttt -l -I -i "$IFACE" -e -s 256 type mgt subtype probe-req | tee -a "$OUTPUT"
   fi
 }
 

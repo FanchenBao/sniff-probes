@@ -2,52 +2,56 @@
 
 # channel hop every 0.5 seconds
 channel_hop() {
-    IEEE80211bg="1 2 3 4 5 6 7 8 9 10 11"
-    IEEE80211bg_intl="$IEEE80211b 12 13 14"
-    IEEE80211a="36 40 44 48 52 56 60 64 149 153 157 161"
-    IEEE80211bga="$IEEE80211bg $IEEE80211a"
-    IEEE80211bga_intl="$IEEE80211bg_intl $IEEE80211a"
+  IEEE80211bg="1 2 3 4 5 6 7 8 9 10 11"
+  IEEE80211bg_intl="$IEEE80211b 12 13 14"
+  IEEE80211a="36 40 44 48 52 56 60 64 149 153 157 161"
+  IEEE80211bga="$IEEE80211bg $IEEE80211a"
+  IEEE80211bga_intl="$IEEE80211bg_intl $IEEE80211a"
 
-    while true ; do
-        for CHAN in $IEEE80211bg ; do
-            echo $CHAN
-            # echo "switching $IFACE to channel $CHAN"
-            sudo iwconfig $IFACE channel $CHAN
-            sleep 0.5
-        done
+  while true ; do
+    for CHAN in $IEEE80211bg ; do
+      echo $CHAN
+      # echo "switching $IFACE to channel $CHAN"
+      sudo iwconfig $IFACE channel $CHAN
+      sleep 0.5
     done
+  done
 }
 
 main() {
-    if ! [ -x "$(command -v gawk)" ]; then
-      echo 'gawk (GNU awk) is not installed. Please install gawk.' >&2
+  if ! [ -x "$(command -v gawk)" ]; then
+    echo 'gawk (GNU awk) is not installed. Please install gawk.' >&2
+    exit 1
+  fi
+
+  if [[ $IFACE == "" ]]; then
+      echo "WiFi interface env variable must be set in [-i wifi_interface]. Type \"ifconfig\" to view network interaces."
       exit 1
-    fi
+  fi
 
-    if [[ $IFACE == "" ]]; then
-        echo "WiFi interface env variable must be set in [-i wifi_interface]. Type \"ifconfig\" to view network interaces."
-        exit 1
-    fi
+  if [[ $CHANNEL_HOP == "true" ]]; then
+      # channel hop in the background
+      channel_hop &
+  fi
 
-    if [[ $CHANNEL_HOP == "true" ]]; then
-        # channel hop in the background
-        channel_hop &
-    fi
-
-    # filter with awk, output timestamp, MAC, and signal strength
-    sudo tcpdump -tttt -l -I -i "$IFACE" -e -s 256 type mgt subtype probe-req | awk -f parse-tcpdump.awk | tee -a "$OUTPUT" 
+  # filter with awk, output timestamp, MAC, and signal strength.
+  if [[ $OUTPUT == "" ]]; then
+    sudo tcpdump -tttt -l -I -i "$IFACE" -e -s 256 type mgt subtype probe-req | awk -f parse-tcpdump.awk
+  else  # only produce output file if user explicitly specifies so.
+    sudo tcpdump -tttt -l -I -i "$IFACE" -e -s 256 type mgt subtype probe-req | awk -f parse-tcpdump.awk | tee -a "$OUTPUT"
+  fi
 }
 
 # DEFAULTS
 CHANNEL_HOP="false"
-OUTPUT="probes.txt"
+OUTPUT=""
 IFACE=""
 
 print_usage() {
-    printf "Usage: sniff-probes.sh [--channel_hop] [-i wifi_interface] [-o output_file]\n"
-    printf "--channel_hop\tEnable channel hop while monitoring\n"
-    printf "-i\t\tWiFi device interface in monitor moden\n"
-    printf "-o\t\tOutput file name"
+  printf "%s\n" "Usage: sniff-probes.sh [--channel_hop] [-i wifi_interface] [-o output_file]"
+  printf "%s\t%s\n" "--channel_hop" "Enable channel hop while monitoring. Default: false"
+  printf "%s\t\t%s\n" "-i" "WiFi device interface in monitor mode. Required." \
+    "-o" "Output file name. Default: no file output"
 }
 
 # Parse options and flags

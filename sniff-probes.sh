@@ -39,7 +39,7 @@ main() {
 }
 
 cleanup() {
-    if [[ "$CH_PID" -ne 0 ]]; then
+    if ps -p $CH_PID > /dev/null; then  # check if the process is still running
         kill $CH_PID
     fi
 }

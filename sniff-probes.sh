@@ -13,17 +13,12 @@ channel_hop() {
       echo $CHAN
       # echo "switching $IFACE to channel $CHAN"
       sudo iwconfig $IFACE channel $CHAN
-      sleep 0.5
+      sleep $CHANNEL_DUR
     done
   done
 }
 
 main() {
-  # if ! [ -x "$(command -v gawk)" ]; then
-  #   echo 'gawk (GNU awk) is not installed. Please install gawk.' >&2
-  #   exit 1
-  # fi
-
   if [[ $IFACE == "" ]]; then
       echo "WiFi interface env variable must be set in [-i wifi_interface]. Type \"ifconfig\" to view network interaces."
       exit 1
@@ -32,6 +27,7 @@ main() {
   if [[ $CHANNEL_HOP == "true" ]]; then
       # channel hop in the background
       channel_hop &
+      CH_PID=$!
   fi
 
   # filter with awk, output timestamp, MAC, and signal strength.
@@ -42,16 +38,26 @@ main() {
   fi
 }
 
+cleanup() {
+    if [ $CH_PID -ne 0 ]; then
+        kill $CH_PID
+    fi
+}
+
+
+
 # DEFAULTS
 CHANNEL_HOP="false"
 OUTPUT=""
 IFACE=""
+CHANNEL_DUR="0.5"
 
 print_usage() {
-  printf "%s\n" "Usage: sniff-probes.sh [--channel_hop] [-i wifi_interface] [-o output_file]"
+  printf "%s\n" "Usage: sniff-probes.sh [--channel_hop] [-i wifi_interface] [-o output_file] [-d channel_duration]"
   printf "%s\t%s\n" "--channel_hop" "Enable channel hop while monitoring. Default: false"
   printf "%s\t\t%s\n" "-i" "WiFi device interface in monitor mode. Required." \
-    "-o" "Output file name. Default: no file output"
+    "-o" "Output file name. Default: no file output" \
+    "-d" "Time to spend on each channel in channel hop, in seconds. Default: 0.5"
 }
 
 # Parse options and flags
@@ -81,11 +87,24 @@ while [[ "$#" -gt 0 ]]; do
       fi
       shift 1
       ;;
+    -d)  # time to spend on each channel in channel hop
+      if [[ "$2" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+        CHANNEL_DUR="$2"
+        shift 1
+      else # -d must be followed by a valid numeric value
+        print_usage
+        exit 1
+      fi
+      shift 1
+      ;;
     *) # unsupported flags
       print_usage
       exit 1
       ;;
   esac
 done
+
+# clean up after exit
+trap cleanup EXIT
 
 main

@@ -39,7 +39,7 @@ main() {
 }
 
 cleanup() {
-    if [ $CH_PID -ne 0 ]; then
+    if [[ "$CH_PID" -ne 0 ]]; then
         kill $CH_PID
     fi
 }

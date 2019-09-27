@@ -1,6 +1,6 @@
 # Sniff Probes
 
-Plug-and-play bash script for sniffing 802.11 probes requests. 
+Plug-and-play bash script for sniffing 802.11 probes requests. This is a fork of the original [`sniff-probes`](https://github.com/brannondorsey/sniff-probes), with major changes to the source code.
 
 ## What are Probe Requests?
 
@@ -13,28 +13,54 @@ For a creative application of probe request capture, see [ProbeKit](https://gith
 ```bash
 # Type "ifconfig" to list available network devices.
 # Wireless devices generally start with a "w"
-IFACE=wlan0 ./sniff-probes.sh
+$ ./sniff-probes.sh -i wlan1
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on wlan1, link-type IEEE802_11_RADIO (802.11 plus radiotap header), capture size 256 bytes
+2019-09-27 13:28:25.190555 59623239888750464us tsft 1.0 Mb/s 2427 MHz 11b -60dBm signal -60dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:cc:c0:79:4a:a4:f4 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:28:25.210787 59623239888770681us tsft 1.0 Mb/s 2427 MHz 11b -59dBm signal -59dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:cc:c0:79:4a:a4:f4 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:28:25.235660 59623239888795565us tsft 1.0 Mb/s 2427 MHz 11b -63dBm signal -63dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:cc:c0:79:4a:a4:f4 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:28:25.255916 59623239888815808us tsft 1.0 Mb/s 2427 MHz 11b -62dBm signal -62dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:cc:c0:79:4a:a4:f4 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:28:29.241325 59623239892801812us tsft 1.0 Mb/s 2427 MHz 11b -58dBm signal -58dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:0c:cb:85:ae:95:b5 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:28:29.251439 59623239892811915us tsft 1.0 Mb/s 2427 MHz 11b -59dBm signal -59dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:0c:cb:85:ae:95:b5 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
 ```
+## Dependecies
+* tcpdump
+* Your wireless device must also support monitor mode. Here is [a list of WiFi cards that support monitor mode](https://www.wirelesshack.org/best-kali-linux-compatible-usb-adapter-dongles-2016.html) (2018). For WiFi adaptors supporting monitor mode and also compatible with Raspberry Pi, check this [purchase guide](https://null-byte.wonderhowto.com/how-to/buy-best-wireless-network-adapter-for-wi-fi-hacking-2019-0178550/) and this [field test report](https://null-byte.wonderhowto.com/how-to/select-field-tested-kali-linux-compatible-wireless-adapter-0180076/).
+
+## Command line options:
+```
+Usage: sniff-probes.sh [--channel_hop] [-i wifi_interface] [-o output_file]
+--channel_hop	Enable channel hop while monitoring. Default: false
+-i		WiFi device interface in monitor mode. Required.
+-o		Output file name. Default: no file output
+```
+By default, channel hopping is disabled. Enabling channel hopping allows for capturing more probe request. The default channel hopping frequency is every 0.5 seconds.
+
+By default, there is no output file.
+
+## Output
+Raw data ouput from `tcpdump` without any parsing (see the output examples above). This is to reduce dependencies on the tool (original `sniff-probes` requires `gawk`) and allow for downstream app more flexibility on which data field to grab.
+
+When channel hopping is enabled, channel information will be output as well. In the output, all probe request info in between two numbers  are detected in the channel of the first number. For example, in the following output, no probe request is detected on channels 1 and 2, but two are detected on channel 3, one on channel 4, four on channel 5, etc.
 
 ```
-00:00:19 -88dBm 00:0a:e2:1f:28:ab "cvteststation01"
-00:00:19 -89dBm 00:0a:e2:1f:28:ab "cvteststation01"
-00:00:22 -85dBm 5c:aa:fd:20:23:41 "Sonos_pZkIex0zatRvhdJTAifLzmatdh"
-00:00:42 -86dBm f4:f5:d8:28:bc:26 "NETGEAR85-5G"
-00:00:46 -89dBm f4:f5:d8:28:bc:26 "NETGEAR85-5G"
-00:00:48 -84dBm f4:f5:d8:06:19:40 "Pamplona Running Club"
-00:01:00 -92dBm 54:60:09:40:56:32 "seawhale"
-00:01:13 -87dBm 38:63:bb:d1:6a:b7 "offline"
-00:01:25 -83dBm 5c:aa:fd:20:23:41 "Sonos_pZkIex0zatRvhdJTAifLzmatdh"
+$ ./sniff-probes.sh -i wlan1 --channel_hop
+1
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on wlan1, link-type IEEE802_11_RADIO (802.11 plus radiotap header), capture size 256 bytes
+2
+3
+2019-09-27 13:43:34.151401 59623240797711194us tsft 1.0 Mb/s 2422 MHz 11b -88dBm signal -88dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:8a:50:10:5e:77:7a (oui Unknown) Probe Request (WPATubez) [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:43:34.152724 59623240797712617us tsft 1.0 Mb/s 2422 MHz 11b -89dBm signal -89dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:8a:50:10:5e:77:7a (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+4
+2019-09-27 13:43:35.109438 59623240798669620us tsft 1.0 Mb/s 2427 MHz 11b -63dBm signal -63dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:68:ec:c5:64:ee:6b (oui Unknown) Probe Request () [1.0* 2.0* 5.5 11.0 6.0* 9.0* 12.0 18.0 Mbit]
+5
+2019-09-27 13:43:35.133183 59623240798693361us tsft 1.0 Mb/s 2427 MHz 11b -60dBm signal -60dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:68:ec:c5:64:ee:6b (oui Unknown) Probe Request () [1.0* 2.0* 5.5 11.0 6.0* 9.0* 12.0 18.0 Mbit]
+2019-09-27 13:43:35.158631 59623240798718802us tsft 1.0 Mb/s 2427 MHz 11b -63dBm signal -63dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:68:ec:c5:64:ee:6b (oui Unknown) Probe Request () [1.0* 2.0* 5.5 11.0 6.0* 9.0* 12.0 18.0 Mbit]
+2019-09-27 13:43:35.984260 59623240799544196us tsft 1.0 Mb/s 2432 MHz 11b -89dBm signal -89dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:40:49:0f:90:e8:1e (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:43:36.004416 59623240799564346us tsft 1.0 Mb/s 2432 MHz 11b -86dBm signal -86dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:40:49:0f:90:e8:1e (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+6
+7
+2019-09-27 13:43:37.015929 59623240800575837us tsft 1.0 Mb/s 2437 MHz 11b -90dBm signal -90dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:2e:32:3e:8b:39:92 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
+2019-09-27 13:43:37.049168 59623240800609102us tsft 1.0 Mb/s 2437 MHz 11b -91dBm signal -91dBm signal antenna 0 BSSID:Broadcast DA:Broadcast SA:2e:32:3e:8b:39:92 (oui Unknown) Probe Request () [1.0 2.0 5.5 11.0 Mbit]
 ```
-Requires **tcpdump** and **gawk** (GNU awk). Both of these packages are installed on many *nix systems by default, but if they aren't you will have to install them manually. Your wireless device must also support monitor mode. Here is [a list of WiFi cards that support monitor mode](https://www.wirelesshack.org/best-kali-linux-compatible-usb-adapter-dongles-2016.html) (2018).
-
-Prints `timetamp`, `signal strength`, `sender MAC address` and `SSID` to screen. Saves output as a space-delimeted "csv" to `probes.txt` by default.
-
-Additional options:
-
-```bash
-IFACE=wlan0 OUTPUT=output.txt CHANNEL_HOP=1 ./sniff-probes.sh
-```
-
-`CHANNEL_HOP=1` enables channel hoping on `IFACE` every two seconds. This is used to increase the number of probes captured. Disabled by default.

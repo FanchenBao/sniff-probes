@@ -10,9 +10,7 @@ For a creative application of probe request capture, see [ProbeKit](https://gith
 
 ## Sniffing Probe Requests
 
-```bash
-# Type "ifconfig" to list available network devices.
-# Wireless devices generally start with a "w"
+```
 $ ./sniff-probes.sh -i wlan1
 tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
 listening on wlan1, link-type IEEE802_11_RADIO (802.11 plus radiotap header), capture size 256 bytes
@@ -29,14 +27,28 @@ listening on wlan1, link-type IEEE802_11_RADIO (802.11 plus radiotap header), ca
 
 ## Command line options:
 ```
-Usage: sniff-probes.sh [--channel_hop] [-i wifi_interface] [-o output_file]
+Usage: sniff-probes.sh [--channel_hop] [-i wifi_interface] [-o output_file] [-d channel_duration]
 --channel_hop	Enable channel hop while monitoring. Default: false
 -i		WiFi device interface in monitor mode. Required.
 -o		Output file name. Default: no file output
+-d		Time to spend on each channel in channel hop, in seconds. Default: 0.5
 ```
 By default, channel hopping is disabled. Enabling channel hopping allows for capturing more probe request. The default channel hopping frequency is every 0.5 seconds.
 
 By default, there is no output file.
+
+By default, if channel hopping is enabled, the duration the device stays on each channel is 0.5 seconds.
+
+You must identify your WiFi device interface that is currently in monitor mode. In Raspberry Pi, type `iwconfig` to list available network devices. Wireless devices generally start with a "w". Also make sure the WiFi interface is in monitor mode. For example, if `wlan1` is in monitor mode, you shall have similar output as follows
+
+```
+$ iwconfig
+...
+
+wlan1     IEEE 802.11  Mode:Monitor  Frequency:2.442 GHz  Tx-Power=20 dBm
+          Retry short limit:7   RTS thr:off   Fragment thr:off
+          Power Management:off
+```
 
 ## Output
 Raw data ouput from `tcpdump` without any parsing (see the output examples above). This is to reduce dependencies on the tool (original `sniff-probes` requires `gawk`) and allow for downstream app more flexibility on which data field to grab.
